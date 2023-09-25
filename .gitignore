@@ -1,2 +1,9 @@
+# Rust
 /target
 /Cargo.lock
+
+# Nix
+/result
+
+# Editors
+.vscode/
