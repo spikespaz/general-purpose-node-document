@@ -1,3 +1,4 @@
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Value {
     U8(u8),
     U16(u16),
