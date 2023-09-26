@@ -2,6 +2,9 @@
 /target
 /Cargo.lock
 
+# Project
+/scratch.rs
+
 # Nix
 /result
 
