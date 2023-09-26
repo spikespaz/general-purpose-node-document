@@ -20,6 +20,29 @@ pub enum Value {
     Null,
 }
 
+impl Value {
+    pub const fn kind(&self) -> &'static str {
+        match self {
+            Self::U8(_) => "U8",
+            Self::U16(_) => "U16",
+            Self::U32(_) => "U32",
+            Self::U64(_) => "U64",
+            Self::Uint(_) => "Uint",
+            Self::I8(_) => "I8",
+            Self::I16(_) => "I16",
+            Self::I32(_) => "I32",
+            Self::I64(_) => "I64",
+            Self::Int(_) => "Int",
+            Self::F32(_) => "F32",
+            Self::F64(_) => "F64",
+            Self::Bool(_) => "Bool",
+            Self::String(_) => "String",
+            Self::List(_) => "List",
+            Self::Null => "Null",
+        }
+    }
+}
+
 macro_rules! impl_from {
     ($($from:ty => $variant:ident),+) => {
         $(impl_from!($from, $variant);)*
@@ -69,15 +92,15 @@ where
 #[derive(Clone, Debug)]
 pub struct IntoInnerError {
     variant: &'static str,
-    into: &'static str,
+    into_type: &'static str,
 }
 
 impl std::fmt::Display for IntoInnerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "could not convert `Value` to `{}` because it was not of variant `{}`",
-            self.into, self.variant
+            "cannot not convert variant `{}` to a `{}`",
+            self.variant, self.into_type
         )
     }
 }
@@ -96,8 +119,8 @@ macro_rules! impl_try_into_inner {
                 match value {
                     Value::$variant(value) => Ok(value),
                     _ => Err(IntoInnerError {
-                        variant: stringify!($variant),
-                        into: stringify!($inner),
+                        variant: value.kind(),
+                        into_type: stringify!($inner),
                     }),
                 }
             }
