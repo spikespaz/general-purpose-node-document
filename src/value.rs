@@ -46,3 +46,12 @@ impl_from!(isize => Int);
 impl_from!(bool => Bool);
 impl_from!(String => String);
 impl_from!(Vec<Value> => List);
+
+impl<T> FromIterator<T> for Value
+where
+    T: Into<Self>,
+{
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        Self::List(iter.into_iter().map(Into::into).collect())
+    }
+}
