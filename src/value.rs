@@ -1,3 +1,5 @@
+use std::error::Error;
+
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Value {
     U8(u8),
@@ -19,7 +21,10 @@ pub enum Value {
 }
 
 macro_rules! impl_from {
-    ($from:ty => $variant:ident) => {
+    ($($from:ty => $variant:ident),+) => {
+        $(impl_from!($from, $variant);)*
+    };
+    ($from:ty, $variant:ident) => {
         impl From<$from> for Value {
             fn from(other: $from) -> Self {
                 Self::$variant(other)
@@ -34,19 +39,21 @@ macro_rules! impl_from {
     };
 }
 
-impl_from!(u8 => U8);
-impl_from!(u16 => U16);
-impl_from!(u32 => U32);
-impl_from!(u64 => U64);
-impl_from!(usize => Uint);
-impl_from!(i8 => I8);
-impl_from!(i16 => I16);
-impl_from!(i32 => I32);
-impl_from!(i64 => I64);
-impl_from!(isize => Int);
-impl_from!(bool => Bool);
-impl_from!(String => String);
-impl_from!(Vec<Value> => List);
+impl_from!(
+    u8 => U8,
+    u16 => U16,
+    u32 => U32,
+    u64 => U64,
+    usize => Uint,
+    i8 => I8,
+    i16 => I16,
+    i32 => I32,
+    i64 => I64,
+    isize => Int,
+    bool => Bool,
+    String => String,
+    Vec<Value> => List
+);
 
 impl<T> FromIterator<T> for Value
 where
