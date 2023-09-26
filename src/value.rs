@@ -125,6 +125,21 @@ macro_rules! impl_try_into_inner {
                 }
             }
         }
+
+        impl TryFrom<Value> for Option<$inner> {
+            type Error = IntoInnerError;
+
+            fn try_from(value: Value) -> Result<Self, Self::Error> {
+                match value {
+                    Value::$variant(value) => Ok(Some(value)),
+                    Value::Null => Ok(None),
+                    _ => Err(IntoInnerError {
+                        variant: value.kind(),
+                        into_type: const_format::formatcp!("Option<{}>", stringify!($inner)),
+                    }),
+                }
+            }
+        }
     };
 }
 
