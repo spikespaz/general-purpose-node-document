@@ -20,28 +20,42 @@ pub enum Value {
     Null,
 }
 
-impl Value {
-    pub const fn kind(&self) -> &'static str {
-        match self {
-            Self::U8(_) => "U8",
-            Self::U16(_) => "U16",
-            Self::U32(_) => "U32",
-            Self::U64(_) => "U64",
-            Self::Uint(_) => "Uint",
-            Self::I8(_) => "I8",
-            Self::I16(_) => "I16",
-            Self::I32(_) => "I32",
-            Self::I64(_) => "I64",
-            Self::Int(_) => "Int",
-            Self::F32(_) => "F32",
-            Self::F64(_) => "F64",
-            Self::Bool(_) => "Bool",
-            Self::String(_) => "String",
-            Self::List(_) => "List",
-            Self::Null => "Null",
-        }
-    }
+macro_rules! ignore {
+    ($ignore:tt, $instead:tt) => {
+        $instead
+    };
 }
+
+macro_rules! impl_kind {
+    ($($variant:ident$($inner:ty)?),+) => {
+        impl Value {
+            pub const fn kind(&self) -> &'static str {
+                match self {
+                    $(Self::$variant$((ignore!($inner, _)))? => stringify!($variant),)*
+                }
+            }
+        }
+    };
+}
+
+impl_kind!(
+    U8(u8),
+    U16(u16),
+    U32(u32),
+    U64(u64),
+    Uint(usize),
+    I8(i8),
+    I16(i16),
+    I32(i32),
+    I64(i64),
+    Int(isize),
+    F32(f32),
+    F64(f64),
+    Bool(bool),
+    String(String),
+    List(Vec<Value>),
+    Null
+);
 
 macro_rules! impl_from {
     ($($from:ty => $variant:ident),+) => {
