@@ -50,6 +50,8 @@ impl_from!(
     i32 => I32,
     i64 => I64,
     isize => Int,
+    f32 => F32,
+    f64 => F64,
     bool => Bool,
     String => String,
     Vec<Value> => List
@@ -114,6 +116,8 @@ impl_try_into_inner!(
     I32 => i32,
     I64 => i64,
     Int => isize,
+    F32 => f32,
+    F64 => f64,
     Bool => bool,
     String => String,
     List => Vec<Value>
