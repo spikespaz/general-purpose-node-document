@@ -63,3 +63,58 @@ where
         Self::List(iter.into_iter().map(Into::into).collect())
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct IntoInnerError {
+    variant: &'static str,
+    into: &'static str,
+}
+
+impl std::fmt::Display for IntoInnerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "could not convert `Value` to `{}` because it was not of variant `{}`",
+            self.into, self.variant
+        )
+    }
+}
+
+impl Error for IntoInnerError {}
+
+macro_rules! impl_try_into_inner {
+    ($($variant:ident => $inner:ty),+) => {
+        $(impl_try_into_inner!($variant, $inner);)*
+    };
+    ($variant:ident, $inner:ty) => {
+        impl TryFrom<Value> for $inner {
+            type Error = IntoInnerError;
+
+            fn try_from(value: Value) -> Result<$inner, Self::Error> {
+                match value {
+                    Value::$variant(value) => Ok(value),
+                    _ => Err(IntoInnerError {
+                        variant: stringify!($variant),
+                        into: stringify!($inner),
+                    }),
+                }
+            }
+        }
+    };
+}
+
+impl_try_into_inner!(
+    U8 => u8,
+    U16 => u16,
+    U32 => u32,
+    U64 => u64,
+    Uint => usize,
+    I8 => i8,
+    I16 => i16,
+    I32 => i32,
+    I64 => i64,
+    Int => isize,
+    Bool => bool,
+    String => String,
+    List => Vec<Value>
+);
