@@ -59,17 +59,19 @@ impl_kind!(
 );
 
 macro_rules! impl_from {
-    ($($from:ty => $variant:ident),+) => {
-        $(impl_from!($from, $variant);)*
+    ($($(#[$meta:meta])* $from:ty => $variant:ident),+) => {
+        $(impl_from!($(#[$meta])*, $from, $variant);)*
     };
-    ($from:ty, $variant:ident) => {
+    ($(#[$meta:meta])*, $from:ty, $variant:ident) => {
         impl<'borrow> From<$from> for Value<'borrow> {
+            $(#[$meta])*
             fn from(other: $from) -> Self {
                 Self::$variant(other)
             }
         }
 
         impl<'borrow> From<Option<$from>> for Value<'borrow> {
+            $(#[$meta])*
             fn from(other: Option<$from>) -> Self {
                 other.map_or(Self::Null, Into::into)
             }
@@ -78,19 +80,36 @@ macro_rules! impl_from {
 }
 
 impl_from!(
+    /// Direct conversion from `u8` to the variant `Value::U8`.
     u8 => U8,
+    /// Direct conversion from `u16` to the variant `Value::U16`.
     u16 => U16,
+    /// Direct conversion from `u32` to the variant `Value::U32`.
     u32 => U32,
+    /// Direct conversion from `u64` to the variant `Value::U64`.
     u64 => U64,
+    /// Direct conversion from `usize` to the variant `Value::Uint`.
     usize => Uint,
+    /// Direct conversion from `i8` to the variant `Value::I8`.
     i8 => I8,
+    /// Direct conversion from `i16` to the variant `Value::I16`.
     i16 => I16,
+    /// Direct conversion from `i32` to the variant `Value::I32`.
     i32 => I32,
+    /// Direct conversion from `i64` to the variant `Value::I64`.
     i64 => I64,
+    /// Direct conversion from `isize` to the variant `Value::Int`.
     isize => Int,
+    /// Direct conversion from `f32` to the variant `Value::F32`.
     f32 => F32,
+    /// Direct conversion from `f64` to the variant `Value::F64`.
     f64 => F64,
+    /// Direct conversion from `bool` to the variant `Value::Bool`.
     bool => Bool,
+    /// Direct conversion from `Vec<Value>` to the variant `Value::List`.
+    ///
+    /// This is not suitable for converting any other iterables.
+    /// See `FromIterator<T> for Value` for recursive conversion from any `Iterator`.
     Vec<Value<'borrow>> => List
 );
 
