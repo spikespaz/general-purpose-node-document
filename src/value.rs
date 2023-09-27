@@ -1,7 +1,8 @@
+use std::borrow::Cow;
 use std::error::Error;
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
-pub enum Value {
+pub enum Value<'borrow> {
     U8(u8),
     U16(u16),
     U32(u32),
@@ -15,8 +16,8 @@ pub enum Value {
     F32(f32),
     F64(f64),
     Bool(bool),
-    String(String),
-    List(Vec<Value>),
+    String(Cow<'borrow, str>),
+    List(Vec<Value<'borrow>>),
     Null,
 }
 
@@ -28,7 +29,7 @@ macro_rules! ignore {
 
 macro_rules! impl_kind {
     ($($variant:ident$($inner:ty)?),+) => {
-        impl Value {
+        impl Value<'_> {
             pub const fn kind(&self) -> &'static str {
                 match self {
                     $(Self::$variant$((ignore!($inner, _)))? => stringify!($variant),)*
@@ -52,7 +53,7 @@ impl_kind!(
     F32(f32),
     F64(f64),
     Bool(bool),
-    String(String),
+    String(Cow<'borrow, str>),
     List(Vec<Value>),
     Null
 );
@@ -62,13 +63,13 @@ macro_rules! impl_from {
         $(impl_from!($from, $variant);)*
     };
     ($from:ty, $variant:ident) => {
-        impl From<$from> for Value {
+        impl<'borrow> From<$from> for Value<'borrow> {
             fn from(other: $from) -> Self {
                 Self::$variant(other)
             }
         }
 
-        impl From<Option<$from>> for Value {
+        impl<'borrow> From<Option<$from>> for Value<'borrow> {
             fn from(other: Option<$from>) -> Self {
                 other.map_or(Self::Null, Into::into)
             }
@@ -90,11 +91,10 @@ impl_from!(
     f32 => F32,
     f64 => F64,
     bool => Bool,
-    String => String,
-    Vec<Value> => List
+    Vec<Value<'borrow>> => List
 );
 
-impl<T> FromIterator<T> for Value
+impl<T> FromIterator<T> for Value<'_>
 where
     T: Into<Self>,
 {
@@ -126,10 +126,10 @@ macro_rules! impl_try_into_inner {
         $(impl_try_into_inner!($variant, $inner);)*
     };
     ($variant:ident, $inner:ty) => {
-        impl TryFrom<Value> for $inner {
+        impl<'borrow> TryFrom<Value<'borrow>> for $inner {
             type Error = IntoInnerError;
 
-            fn try_from(value: Value) -> Result<$inner, Self::Error> {
+            fn try_from(value: Value<'borrow>) -> Result<$inner, Self::Error> {
                 match value {
                     Value::$variant(value) => Ok(value),
                     _ => Err(IntoInnerError {
@@ -140,10 +140,10 @@ macro_rules! impl_try_into_inner {
             }
         }
 
-        impl TryFrom<Value> for Option<$inner> {
+        impl<'borrow> TryFrom<Value<'borrow>> for Option<$inner> {
             type Error = IntoInnerError;
 
-            fn try_from(value: Value) -> Result<Self, Self::Error> {
+            fn try_from(value: Value<'borrow>) -> Result<Self, Self::Error> {
                 match value {
                     Value::$variant(value) => Ok(Some(value)),
                     Value::Null => Ok(None),
@@ -171,6 +171,6 @@ impl_try_into_inner!(
     F32 => f32,
     F64 => f64,
     Bool => bool,
-    String => String,
-    List => Vec<Value>
+    String => Cow<'borrow, str>,
+    List => Vec<Value<'borrow>>
 );
