@@ -21,6 +21,8 @@ pub enum Value<'borrow> {
     Null,
 }
 
+impl crate::Sealed for Value<'_> {}
+
 macro_rules! ignore {
     ($ignore:tt, $instead:tt) => {
         $instead
@@ -140,34 +142,34 @@ impl std::fmt::Display for IntoInnerError {
 
 impl Error for IntoInnerError {}
 
-macro_rules! impl_try_into_inner {
+pub trait IntoInner<T>: crate::Sealed {
+    fn into_inner(self) -> Result<T, IntoInnerError>;
+}
+
+macro_rules! impl_into_inner {
     ($($variant:ident => $inner:ty),+) => {
-        $(impl_try_into_inner!($variant, $inner);)*
+        $(impl_into_inner!($variant, $inner);)*
     };
     ($variant:ident, $inner:ty) => {
-        impl<'borrow> TryFrom<Value<'borrow>> for $inner {
-            type Error = IntoInnerError;
-
-            fn try_from(value: Value<'borrow>) -> Result<$inner, Self::Error> {
-                match value {
-                    Value::$variant(value) => Ok(value),
+        impl<'borrow> IntoInner<$inner> for Value<'borrow> {
+            fn into_inner(self) -> Result<$inner, IntoInnerError> {
+                match self {
+                    Self::$variant(value) => Ok(value),
                     _ => Err(IntoInnerError {
-                        variant: value.kind(),
+                        variant: self.kind(),
                         into_type: stringify!($inner),
                     }),
                 }
             }
         }
 
-        impl<'borrow> TryFrom<Value<'borrow>> for Option<$inner> {
-            type Error = IntoInnerError;
-
-            fn try_from(value: Value<'borrow>) -> Result<Self, Self::Error> {
-                match value {
-                    Value::$variant(value) => Ok(Some(value)),
-                    Value::Null => Ok(None),
+        impl<'borrow> IntoInner<Option<$inner>> for Value<'borrow> {
+            fn into_inner(self) -> Result<Option<$inner>, IntoInnerError> {
+                match self {
+                    Self::$variant(value) => Ok(Some(value)),
+                    Self::Null => Ok(None),
                     _ => Err(IntoInnerError {
-                        variant: value.kind(),
+                        variant: self.kind(),
                         into_type: const_format::formatcp!("Option<{}>", stringify!($inner)),
                     }),
                 }
@@ -176,7 +178,7 @@ macro_rules! impl_try_into_inner {
     };
 }
 
-impl_try_into_inner!(
+impl_into_inner!(
     U8 => u8,
     U16 => u16,
     U32 => u32,
