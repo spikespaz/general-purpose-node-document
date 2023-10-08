@@ -213,3 +213,27 @@ impl_into_inner!(
     String => Cow<'borrow, str>,
     List => Vec<Value<'borrow>>
 );
+
+impl<'borrow> IntoInner<&'borrow str> for Value<'borrow> {
+    fn into_inner(self) -> Result<&'borrow str, IntoInnerError> {
+        match self {
+            Self::String(Cow::Borrowed(inner)) => Ok(inner),
+            _ => Err(IntoInnerError {
+                variant: self.kind(),
+                into_type: "&str",
+            }),
+        }
+    }
+}
+
+impl IntoInner<String> for Value<'_> {
+    fn into_inner(self) -> Result<String, IntoInnerError> {
+        match self {
+            Self::String(Cow::Owned(inner)) => Ok(inner),
+            _ => Err(IntoInnerError {
+                variant: self.kind(),
+                into_type: "String",
+            }),
+        }
+    }
+}
