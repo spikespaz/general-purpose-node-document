@@ -237,3 +237,26 @@ impl IntoInner<String> for Value<'_> {
         }
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+    use super::{IntoInner, Value};
+
+    #[test]
+    fn test_roundtrip_borrowed_str() {
+        let expect = "foo";
+        let value = Value::from(expect);
+        let inner: &str = value.into_inner().unwrap();
+
+        assert_eq!(expect, inner);
+    }
+
+    #[test]
+    fn test_roundtrip_owned_str() {
+        let expect = "foo".to_owned();
+        let value = Value::from(expect.clone());
+        let inner: String = value.into_inner().unwrap();
+
+        assert_eq!(expect, inner);
+    }
+}
