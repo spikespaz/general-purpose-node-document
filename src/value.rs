@@ -108,6 +108,8 @@ impl_from!(
     f64 => F64,
     /// Direct conversion from `bool` to the variant `Value::Bool`.
     bool => Bool,
+    /// Direct conversion from `Cow<'_, Str>` to the variant `Value::String`.
+    Cow<'borrow, str> => String,
     /// Direct conversion from `Vec<Value>` to the variant `Value::List`.
     ///
     /// This is not suitable for converting any other iterables.
@@ -240,10 +242,12 @@ impl IntoInner<String> for Value<'_> {
 
 #[cfg(test)]
 pub mod tests {
+    use std::borrow::Cow;
+
     use super::{IntoInner, Value};
 
     #[test]
-    fn test_roundtrip_borrowed_str() {
+    fn test_roundtrip_str_borrowed() {
         let expect = "foo";
         let value = Value::from(expect);
         let inner: &str = value.into_inner().unwrap();
@@ -252,10 +256,29 @@ pub mod tests {
     }
 
     #[test]
-    fn test_roundtrip_owned_str() {
+    fn test_roundtrip_str_owned() {
         let expect = "foo".to_owned();
         let value = Value::from(expect.clone());
         let inner: String = value.into_inner().unwrap();
+
+        assert_eq!(expect, inner);
+    }
+
+    #[test]
+    fn test_roundtrip_cow_str_borrowed() {
+        let expect = Cow::Borrowed("foo");
+        // Cloning a `Cow::Borrowed`` does not copy.
+        let value = Value::from(expect.clone());
+        let inner: Cow<'_, str> = value.into_inner().unwrap();
+
+        assert_eq!(expect, inner);
+    }
+
+    #[test]
+    fn test_roundtrip_cow_str_owned() {
+        let expect: Cow<'_, str> = Cow::Owned("foo".to_owned());
+        let value = Value::from(expect.clone());
+        let inner: Cow<'_, str> = value.into_inner().unwrap();
 
         assert_eq!(expect, inner);
     }
