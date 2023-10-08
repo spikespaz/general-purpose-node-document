@@ -115,6 +115,24 @@ impl_from!(
     Vec<Value<'borrow>> => List
 );
 
+impl From<String> for Value<'_> {
+    fn from(other: String) -> Self {
+        Self::String(Cow::Owned(other))
+    }
+}
+
+impl<'borrow> From<&'borrow String> for Value<'borrow> {
+    fn from(other: &'borrow String) -> Self {
+        Self::String(Cow::Borrowed(other))
+    }
+}
+
+impl<'borrow> From<&'borrow str> for Value<'borrow> {
+    fn from(other: &'borrow str) -> Self {
+        Self::String(Cow::Borrowed(other))
+    }
+}
+
 impl<T> FromIterator<T> for Value<'_>
 where
     T: Into<Self>,
