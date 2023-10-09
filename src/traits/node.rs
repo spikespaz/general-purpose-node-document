@@ -5,6 +5,10 @@ use crate::Value;
 pub trait Document {
     fn nodes(&self) -> Vec<&dyn Node>;
 
+    fn get_node(&self, index: usize) -> Option<&dyn Node> {
+        self.nodes().get(index).copied()
+    }
+
     fn has_nodes(&self) -> bool {
         !self.nodes().is_empty()
     }
@@ -56,6 +60,14 @@ mod test {
     impl Document for Parent {
         fn nodes(&self) -> Vec<&dyn Node> {
             vec![&self.child_one, &self.child_two]
+        }
+
+        fn get_node(&self, index: usize) -> Option<&dyn Node> {
+            match index {
+                0 => Some(&self.child_one),
+                1 => Some(&self.child_two),
+                _ => None,
+            }
         }
     }
 
