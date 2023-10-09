@@ -21,6 +21,14 @@ pub trait Node {
 
     fn params(&self) -> HashMap<&str, Value<'_>>;
 
+    fn get_arg(&self, index: usize) -> Option<Value<'_>> {
+        self.args().get(index).cloned()
+    }
+
+    fn get_param(&self, key: &str) -> Option<Value> {
+        self.params().get(key).cloned()
+    }
+
     fn has_args(&self) -> bool {
         !self.args().is_empty()
     }
@@ -84,12 +92,30 @@ mod test {
             ]
         }
 
+        fn get_arg(&self, index: usize) -> Option<Value> {
+            match index {
+                0 => Some(Value::from(&self.arg_one)),
+                1 => Some(Value::from(self.arg_two)),
+                2 => Some(Value::from(self.arg_three)),
+                _ => None,
+            }
+        }
+
         fn params(&self) -> HashMap<&str, Value> {
             HashMap::from([
                 ("one", Value::from(&self.param_one)),
                 ("two", Value::from(self.param_two)),
                 ("three", Value::from(self.param_three)),
             ])
+        }
+
+        fn get_param(&self, key: &str) -> Option<Value> {
+            match key {
+                "one" => Some(Value::from(&self.param_one)),
+                "two" => Some(Value::from(self.param_two)),
+                "three" => Some(Value::from(self.param_three)),
+                _ => None,
+            }
         }
     }
 
