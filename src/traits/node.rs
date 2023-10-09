@@ -41,6 +41,22 @@ mod test {
         param_one: String,
         param_two: f64,
         param_three: Option<i32>,
+        child_one: ChildOne,
+        child_two: ChildTwo,
+    }
+
+    struct ChildOne {
+        arg: usize,
+    }
+
+    struct ChildTwo {
+        param_foo: String,
+    }
+
+    impl Document for Parent {
+        fn nodes(&self) -> Vec<&dyn Node> {
+            vec![&self.child_one, &self.child_two]
+        }
     }
 
     impl Node for Parent {
@@ -65,6 +81,34 @@ mod test {
         }
     }
 
+    impl Node for ChildOne {
+        fn name(&self) -> &str {
+            "one"
+        }
+
+        fn args(&self) -> Vec<Value> {
+            vec![Value::from(self.arg)]
+        }
+
+        fn params(&self) -> HashMap<&str, Value<'_>> {
+            HashMap::new()
+        }
+    }
+
+    impl Node for ChildTwo {
+        fn name(&self) -> &str {
+            "two"
+        }
+
+        fn args(&self) -> Vec<Value> {
+            vec![]
+        }
+
+        fn params(&self) -> HashMap<&str, Value<'_>> {
+            HashMap::from([("foo", Value::from(&self.param_foo))])
+        }
+    }
+
     static PARENT_NODE: Lazy<Parent> = Lazy::new(|| Parent {
         arg_one: "foo".to_owned(),
         arg_two: 2.3,
@@ -72,7 +116,23 @@ mod test {
         param_one: "bar".to_owned(),
         param_two: 3.2,
         param_three: None,
+        child_one: ChildOne { arg: usize::MAX },
+        child_two: ChildTwo {
+            param_foo: "bar".to_owned(),
+        },
     });
+
+    #[test]
+    fn test_document_args() {
+        for node in PARENT_NODE.nodes() {
+            println!(
+                "node name: {}, args: {:?}, params: {:?}",
+                node.name(),
+                node.args(),
+                node.params()
+            );
+        }
+    }
 
     #[test]
     fn test_node_args() {
