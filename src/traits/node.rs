@@ -25,7 +25,7 @@ pub trait Node {
         self.args().get(index).cloned()
     }
 
-    fn get_param(&self, key: &str) -> Option<Value> {
+    fn get_param(&self, key: &str) -> Option<Value<'_>> {
         self.params().get(key).cloned()
     }
 
@@ -92,7 +92,7 @@ mod test {
             ]
         }
 
-        fn get_arg(&self, index: usize) -> Option<Value> {
+        fn get_arg(&self, index: usize) -> Option<Value<'_>> {
             match index {
                 0 => Some(Value::from(&self.arg_one)),
                 1 => Some(Value::from(self.arg_two)),
@@ -101,7 +101,7 @@ mod test {
             }
         }
 
-        fn params(&self) -> HashMap<&str, Value> {
+        fn params(&self) -> HashMap<&str, Value<'_>> {
             HashMap::from([
                 ("one", Value::from(&self.param_one)),
                 ("two", Value::from(self.param_two)),
@@ -109,7 +109,7 @@ mod test {
             ])
         }
 
-        fn get_param(&self, key: &str) -> Option<Value> {
+        fn get_param(&self, key: &str) -> Option<Value<'_>> {
             match key {
                 "one" => Some(Value::from(&self.param_one)),
                 "two" => Some(Value::from(self.param_two)),
@@ -124,7 +124,7 @@ mod test {
             "one"
         }
 
-        fn args(&self) -> Vec<Value> {
+        fn args(&self) -> Vec<Value<'_>> {
             vec![Value::from(self.arg)]
         }
 
@@ -138,7 +138,7 @@ mod test {
             "two"
         }
 
-        fn args(&self) -> Vec<Value> {
+        fn args(&self) -> Vec<Value<'_>> {
             vec![]
         }
 
