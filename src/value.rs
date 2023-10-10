@@ -32,9 +32,10 @@ macro_rules! ignore {
 macro_rules! impl_kind {
     ($($variant:ident$($inner:ty)?),+) => {
         impl Value<'_> {
+            #[must_use]
             pub const fn kind(&self) -> &'static str {
                 match self {
-                    $(Self::$variant$((ignore!($inner, _)))? => stringify!($variant),)*
+                    $(Self::$variant$((ignore!($inner, _)))? => stringify!($variant),)+
                 }
             }
         }
@@ -62,9 +63,10 @@ impl_kind!(
 
 macro_rules! impl_from {
     ($($(#[$meta:meta])* $from:ty => $variant:ident),+) => {
-        $(impl_from!($(#[$meta])*, $from, $variant);)*
+        $(impl_from!($(#[$meta])*, $from, $variant);)+
     };
     ($(#[$meta:meta])*, $from:ty, $variant:ident) => {
+        #[allow(single_use_lifetimes)]
         impl<'borrow> From<$from> for Value<'borrow> {
             $(#[$meta])*
             fn from(other: $from) -> Self {
@@ -72,6 +74,7 @@ macro_rules! impl_from {
             }
         }
 
+        #[allow(single_use_lifetimes)]
         impl<'borrow> From<Option<$from>> for Value<'borrow> {
             $(#[$meta])*
             fn from(other: Option<$from>) -> Self {
@@ -144,7 +147,7 @@ where
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct IntoInnerError {
     variant: &'static str,
     into_type: &'static str,
@@ -168,9 +171,10 @@ pub trait IntoInner<T>: crate::Sealed {
 
 macro_rules! impl_into_inner {
     ($($variant:ident => $inner:ty),+) => {
-        $(impl_into_inner!($variant, $inner);)*
+        $(impl_into_inner!($variant, $inner);)+
     };
     ($variant:ident, $inner:ty) => {
+        #[allow(single_use_lifetimes)]
         impl<'borrow> IntoInner<$inner> for Value<'borrow> {
             fn into_inner(self) -> Result<$inner, IntoInnerError> {
                 match self {
@@ -183,6 +187,7 @@ macro_rules! impl_into_inner {
             }
         }
 
+        #[allow(single_use_lifetimes)]
         impl<'borrow> IntoInner<Option<$inner>> for Value<'borrow> {
             fn into_inner(self) -> Result<Option<$inner>, IntoInnerError> {
                 match self {

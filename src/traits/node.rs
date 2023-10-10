@@ -186,7 +186,7 @@ mod test {
 
     #[test]
     fn test_node_params() {
-        for (key, value) in PARENT_NODE.params().into_iter() {
+        for (key, value) in PARENT_NODE.params() {
             println!(
                 "param name: {}, kind: {}, value: {:?}",
                 key,
