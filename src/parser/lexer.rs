@@ -52,6 +52,69 @@ impl Cursor {
     }
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub enum ScanBuf<'src> {
+    /// There is currently nothing in the buffer.
+    #[default]
+    Empty,
+    /// The buffer contains a single character.
+    Char(char),
+    /// The buffer contains a slice.
+    Slice(Box<&'src str>),
+    /// No more text can be consumed.
+    EndOfFile,
+}
+
+impl<'src> ScanBuf<'src> {
+    #[must_use]
+    pub fn eq_char(&self, ch: char) -> bool {
+        matches!(self, Self::Char(x) if *x == ch)
+    }
+
+    #[must_use]
+    pub fn eq_slice(&self, slice: &'src str) -> bool {
+        matches!(self, Self::Slice(x) if **x == slice)
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Scanner<'src> {
+    source: &'src str,
+    cursor: Cursor,
+}
+
+impl<'src> Scanner<'src> {
+    #[must_use]
+    pub fn new(source: &'src str) -> Self {
+        Self {
+            source,
+            cursor: Cursor::new(),
+        }
+    }
+
+    pub fn buffer(&mut self) -> ScanBuf<'src> {
+        let buf = match self.cursor {
+            Cursor::Index(_) => ScanBuf::Empty,
+            Cursor::Char(index) => self
+                .source
+                .chars()
+                .nth(index)
+                .map_or(ScanBuf::EndOfFile, ScanBuf::Char),
+            Cursor::Slice(index, length) => self
+                .source
+                .get(index..index + length)
+                .map_or(ScanBuf::EndOfFile, |slice| ScanBuf::Slice(Box::new(slice))),
+        };
+        self.cursor.reset();
+        buf
+    }
+
+    pub fn take(&mut self, count: usize) -> &mut Self {
+        self.cursor.extend(count);
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -69,5 +132,16 @@ mod tests {
         assert_eq!(cursor.extend(1), &Cursor::Slice(5, 2));
         assert_eq!(cursor.extend(3), &Cursor::Slice(5, 5));
         assert_eq!(cursor.reset().index(), 10);
+    }
+
+    #[test]
+    fn test_scanner_take() {
+        let mut scan = Scanner::new("123456789");
+        assert!(scan.take(1).buffer().eq_char('1'));
+        assert!(scan.take(1).buffer().eq_char('2'));
+        assert!(scan.take(3).buffer().eq_slice("345"));
+        assert_eq!(scan.buffer(), ScanBuf::Empty);
+        assert!(scan.take(4).buffer().eq_slice("6789"));
+        assert_eq!(scan.take(1).buffer(), ScanBuf::EndOfFile);
     }
 }
