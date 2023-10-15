@@ -27,6 +27,7 @@
 #![deny(pointer_structural_match)]
 #![deny(unsafe_code)]
 
+pub mod parser;
 pub mod traits;
 pub mod value;
 
