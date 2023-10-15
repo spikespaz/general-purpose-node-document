@@ -113,6 +113,13 @@ impl<'src> Scanner<'src> {
         self.cursor.extend(count);
         self
     }
+
+    #[must_use]
+    pub fn peek(&self, count: usize) -> ScanBuf<'src> {
+        let mut scan = *self;
+        scan.cursor.reset();
+        scan.take(count).buffer()
+    }
 }
 
 #[cfg(test)]
@@ -143,5 +150,19 @@ mod tests {
         assert_eq!(scan.buffer(), ScanBuf::Empty);
         assert!(scan.take(4).buffer().eq_slice("6789"));
         assert_eq!(scan.take(1).buffer(), ScanBuf::EndOfFile);
+    }
+
+    #[test]
+    fn test_scanner_peek() {
+        let mut scan = Scanner::new("123456789");
+        assert_eq!(scan.buffer(), ScanBuf::Empty);
+        assert!(scan.peek(0).eq_slice(""));
+        assert!(scan.peek(1).eq_char('1'));
+        assert!(scan.peek(1).eq_char('1'));
+        assert!(scan.peek(2).eq_slice("12"));
+        assert_eq!(scan.buffer(), ScanBuf::Empty);
+        assert!(scan.take(3).buffer().eq_slice("123"));
+        assert!(scan.take(1).buffer().eq_char('4'));
+        assert_eq!(scan.take(9).buffer(), ScanBuf::EndOfFile);
     }
 }
