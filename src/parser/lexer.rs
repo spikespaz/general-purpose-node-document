@@ -80,6 +80,33 @@ impl<'src> ScanBuf<'src> {
             _ => false,
         }
     }
+
+    /// Gets the character out of the buffer.
+    ///
+    /// # Panics
+    /// Panics if the buffer does not contain a single character.
+    /// Note that it could be a string slice with a single character, which will
+    /// *not* panic.
+    #[must_use]
+    pub fn to_char_unchecked(self) -> char {
+        match self {
+            Self::Char(ch) => ch,
+            Self::Slice(slice) if slice.len() == 1 => slice.chars().nth(0).unwrap(),
+            _ => panic!("buffer was not a single character"),
+        }
+    }
+
+    /// Gets the slice out of the buffer.
+    ///
+    /// # Panics
+    /// Panics if the buffer does not contain a slice.
+    #[must_use]
+    pub fn to_slice_unchecked(&self) -> &str {
+        match self {
+            Self::Slice(slice) => slice.as_ref(),
+            _ => panic!("buffer was not a string slice"),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
