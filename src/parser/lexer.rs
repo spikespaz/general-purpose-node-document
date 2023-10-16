@@ -29,9 +29,9 @@ impl Cursor {
         }
     }
 
-    /// Reset the cursor to the next position so that it is ready for another
+    /// Advance the cursor to the next position so that it is ready for another
     /// scan.
-    fn reset(&mut self) -> &mut Self {
+    fn advance(&mut self) -> &mut Self {
         *self = match *self {
             Self::Index(_) => *self,
             Self::Char(index) => Self::Index(index + 1),
@@ -137,7 +137,7 @@ impl<'src> Scanner<'src> {
                 .get(index..index + length)
                 .map_or(ScanBuf::EndOfFile, |slice| ScanBuf::Slice(Box::new(slice))),
         };
-        self.cursor.reset();
+        self.cursor.advance();
         buf
     }
 
@@ -149,7 +149,7 @@ impl<'src> Scanner<'src> {
     #[must_use]
     pub fn peek(&self, count: usize) -> ScanBuf<'src> {
         let mut scan = *self;
-        scan.cursor.reset();
+        scan.cursor.advance();
         scan.take(count).buffer()
     }
 }
@@ -164,13 +164,13 @@ mod tests {
         assert_eq!(cursor.len(), 0);
         assert_eq!(cursor.extend(2).len(), 2);
         assert_eq!(cursor.extend(3).len(), 5);
-        assert_eq!(cursor.reset().index(), 5);
-        assert_eq!(cursor.reset().index(), 5);
+        assert_eq!(cursor.advance().index(), 5);
+        assert_eq!(cursor.advance().index(), 5);
         assert_eq!(cursor.extend(1), &Cursor::Char(5));
         assert_eq!(cursor.len(), 1);
         assert_eq!(cursor.extend(1), &Cursor::Slice(5, 2));
         assert_eq!(cursor.extend(3), &Cursor::Slice(5, 5));
-        assert_eq!(cursor.reset().index(), 10);
+        assert_eq!(cursor.advance().index(), 10);
     }
 
     #[test]
