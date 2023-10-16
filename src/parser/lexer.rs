@@ -53,7 +53,7 @@ impl Cursor {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub enum ScanBuf<'src> {
+pub enum Selection<'src> {
     /// There is currently nothing in the buffer.
     #[default]
     Empty,
@@ -65,7 +65,7 @@ pub enum ScanBuf<'src> {
     EndOfFile,
 }
 
-impl<'src> ScanBuf<'src> {
+impl<'src> Selection<'src> {
     #[must_use]
     pub fn eq_char(&self, ch: char) -> bool {
         matches!(self, Self::Char(x) if *x == ch)
@@ -129,18 +129,18 @@ impl<'src> Scanner<'src> {
         self.cursor
     }
 
-    pub fn buffer(&mut self) -> ScanBuf<'src> {
+    pub fn selection(&mut self) -> Selection<'src> {
         let buf = match self.cursor {
-            Cursor::Index(_) => ScanBuf::Empty,
+            Cursor::Index(_) => Selection::Empty,
             Cursor::Char(index) => self
                 .source
                 .chars()
                 .nth(index)
-                .map_or(ScanBuf::EndOfFile, ScanBuf::Char),
+                .map_or(Selection::EndOfFile, Selection::Char),
             Cursor::Slice(index, length) => self
                 .source
                 .get(index..index + length)
-                .map_or(ScanBuf::EndOfFile, |slice| ScanBuf::Slice(Box::new(slice))),
+                .map_or(Selection::EndOfFile, |slice| Selection::Slice(Box::new(slice))),
         };
         self.cursor.advance();
         buf
@@ -152,10 +152,10 @@ impl<'src> Scanner<'src> {
     }
 
     #[must_use]
-    pub fn peek(&self, count: usize) -> ScanBuf<'src> {
+    pub fn peek(&self, count: usize) -> Selection<'src> {
         let mut scan = *self;
         scan.cursor.advance();
-        scan.take(count).buffer()
+        scan.take(count).selection()
     }
 }
 
@@ -181,25 +181,25 @@ mod tests {
     #[test]
     fn test_scanner_take() {
         let mut scan = Scanner::new("123456789");
-        assert!(scan.take(1).buffer().eq_char('1'));
-        assert!(scan.take(1).buffer().eq_char('2'));
-        assert!(scan.take(3).buffer().eq_slice("345"));
-        assert_eq!(scan.buffer(), ScanBuf::Empty);
-        assert!(scan.take(4).buffer().eq_slice("6789"));
-        assert_eq!(scan.take(1).buffer(), ScanBuf::EndOfFile);
+        assert!(scan.take(1).selection().eq_char('1'));
+        assert!(scan.take(1).selection().eq_char('2'));
+        assert!(scan.take(3).selection().eq_slice("345"));
+        assert_eq!(scan.selection(), Selection::Empty);
+        assert!(scan.take(4).selection().eq_slice("6789"));
+        assert_eq!(scan.take(1).selection(), Selection::EndOfFile);
     }
 
     #[test]
     fn test_scanner_peek() {
         let mut scan = Scanner::new("123456789");
-        assert_eq!(scan.buffer(), ScanBuf::Empty);
+        assert_eq!(scan.selection(), Selection::Empty);
         assert!(scan.peek(0).eq_slice(""));
         assert!(scan.peek(1).eq_char('1'));
         assert!(scan.peek(1).eq_char('1'));
         assert!(scan.peek(2).eq_slice("12"));
-        assert_eq!(scan.buffer(), ScanBuf::Empty);
-        assert!(scan.take(3).buffer().eq_slice("123"));
-        assert!(scan.take(1).buffer().eq_char('4'));
-        assert_eq!(scan.take(9).buffer(), ScanBuf::EndOfFile);
+        assert_eq!(scan.selection(), Selection::Empty);
+        assert!(scan.take(3).selection().eq_slice("123"));
+        assert!(scan.take(1).selection().eq_char('4'));
+        assert_eq!(scan.take(9).selection(), Selection::EndOfFile);
     }
 }
