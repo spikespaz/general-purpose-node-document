@@ -1,5 +1,5 @@
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-enum Cursor {
+pub enum Cursor {
     /// The cursor is in a position, but corresponds to no characters.
     Index(usize),
     /// An index, corresponds to a character.
@@ -14,14 +14,14 @@ impl Cursor {
     }
 
     /// Get the index of the cursor.
-    fn index(&self) -> usize {
+    pub fn index(&self) -> usize {
         match *self {
             Self::Index(index) | Self::Char(index) | Self::Slice(index, _) => index,
         }
     }
 
     /// Get the length of the cursor, zero if it is an index.
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         match *self {
             Self::Index(_) => 0,
             Self::Char(_) => 1,
@@ -31,7 +31,7 @@ impl Cursor {
 
     /// Advance the cursor to the next position so that it is ready for another
     /// scan.
-    fn advance(&mut self) -> &mut Self {
+    pub fn advance(&mut self) -> &mut Self {
         *self = match *self {
             Self::Index(_) => *self,
             Self::Char(index) => Self::Index(index + 1),
@@ -41,7 +41,7 @@ impl Cursor {
     }
 
     /// Extend the cursor by `count` characters.
-    fn extend(&mut self, count: usize) -> &mut Self {
+    pub fn extend(&mut self, count: usize) -> &mut Self {
         *self = match *self {
             Self::Index(index) if count == 1 => Self::Char(index),
             Self::Index(index) => Self::Slice(index, count),
@@ -122,6 +122,11 @@ impl<'src> Scanner<'src> {
             source,
             cursor: Cursor::new(),
         }
+    }
+
+    #[must_use]
+    pub fn cursor(&self) -> Cursor {
+        self.cursor
     }
 
     pub fn buffer(&mut self) -> ScanBuf<'src> {
