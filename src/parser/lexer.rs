@@ -71,9 +71,14 @@ impl<'src> ScanBuf<'src> {
         matches!(self, Self::Char(x) if *x == ch)
     }
 
+    #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn eq_slice(&self, slice: &'src str) -> bool {
-        matches!(self, Self::Slice(x) if **x == slice)
+        match self {
+            Self::Char(buf) if slice.len() == 1 => buf == &slice.chars().nth(0).unwrap(),
+            Self::Slice(buf) => buf.as_ref() == &slice,
+            _ => false,
+        }
     }
 }
 
