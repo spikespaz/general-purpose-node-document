@@ -14,6 +14,7 @@ impl Cursor {
     }
 
     /// Get the index of the cursor.
+    #[must_use]
     pub fn index(&self) -> usize {
         match *self {
             Self::Index(index) | Self::Char(index) | Self::Slice(index, _) => index,
@@ -21,12 +22,18 @@ impl Cursor {
     }
 
     /// Get the length of the cursor, zero if it is an index.
+    #[must_use]
     pub fn len(&self) -> usize {
         match *self {
             Self::Index(_) => 0,
             Self::Char(_) => 1,
             Self::Slice(_, length) => length,
         }
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        matches!(self, Self::Index(_) | Self::Slice(_, 0))
     }
 
     /// Advance the cursor to the next position so that it is ready for another
@@ -140,7 +147,9 @@ impl<'src> Scanner<'src> {
             Cursor::Slice(index, length) => self
                 .source
                 .get(index..index + length)
-                .map_or(Selection::EndOfFile, |slice| Selection::Slice(Box::new(slice))),
+                .map_or(Selection::EndOfFile, |slice| {
+                    Selection::Slice(Box::new(slice))
+                }),
         };
         self.cursor.advance();
         buf
