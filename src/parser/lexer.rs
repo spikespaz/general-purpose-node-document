@@ -140,6 +140,11 @@ where
         self.buffer.push(self.iter.next()?);
         self.buffer.get(0)
     }
+
+    fn look(&mut self, count: usize) -> Option<&[T]> {
+        self.buffer.extend(self.iter.by_ref().take(count));
+        self.buffer.get(0..count)
+    }
 }
 
 impl<S, T> Iterator for BufIter<S, T>
@@ -211,6 +216,11 @@ where
     #[must_use]
     pub fn peek_byte(&mut self) -> Option<u8> {
         self.source.peek().copied()
+    }
+
+    #[must_use]
+    pub fn look_bytes(&mut self, count: usize) -> Option<&[u8]> {
+        self.source.look(count)
     }
 
     // pub fn selection(&mut self) -> Selection<'_> {
