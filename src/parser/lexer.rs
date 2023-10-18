@@ -198,7 +198,8 @@ where
 
     fn look(&mut self, count: usize) -> Option<Self::ItemSlice<'_>> {
         if self.buffer.len() < count {
-            self.buffer.extend(self.iter.by_ref().take(count));
+            self.buffer
+                .extend(self.iter.by_ref().take(count - self.buffer.len()));
         }
         self.buffer.get(0..count)
     }
