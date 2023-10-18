@@ -135,6 +135,11 @@ where
             buffer: Vec::new(),
         }
     }
+
+    fn peek(&mut self) -> Option<&T> {
+        self.buffer.push(self.iter.next()?);
+        self.buffer.get(0)
+    }
 }
 
 impl<S, T> Iterator for BufIter<S, T>
@@ -201,6 +206,11 @@ where
 
     fn source_chars(&mut self) -> impl Iterator + '_ {
         SourceChars(self.source.by_ref())
+    }
+
+    #[must_use]
+    pub fn peek_byte(&mut self) -> Option<u8> {
+        self.source.peek().copied()
     }
 
     // pub fn selection(&mut self) -> Selection<'_> {
