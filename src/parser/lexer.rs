@@ -135,20 +135,6 @@ where
             buffer: Vec::new(),
         }
     }
-
-    fn peek(&mut self) -> Option<&T> {
-        if self.buffer.is_empty() {
-            self.buffer.push(self.iter.next()?);
-        }
-        self.buffer.get(0)
-    }
-
-    fn look(&mut self, count: usize) -> Option<&[T]> {
-        if self.buffer.len() < count {
-            self.buffer.extend(self.iter.by_ref().take(count));
-        }
-        self.buffer.get(0..count)
-    }
 }
 
 impl<S, T> Iterator for BufIter<S, T>
@@ -181,6 +167,40 @@ where
             }
         }
         None
+    }
+}
+
+trait Peekable {
+    type Item<'item>
+    where
+        Self: 'item;
+    type ItemSlice<'items>
+    where
+        Self: 'items;
+
+    fn peek(&mut self) -> Option<Self::Item<'_>>;
+    fn look(&mut self, count: usize) -> Option<Self::ItemSlice<'_>>;
+}
+
+impl<I, T> Peekable for BufIter<I, T>
+where
+    I: Iterator<Item = T>,
+{
+    type Item<'item> = &'item T where I: 'item, T: 'item;
+    type ItemSlice<'items> = &'items [T] where I: 'items, T: 'items;
+
+    fn peek(&mut self) -> Option<Self::Item<'_>> {
+        if self.buffer.is_empty() {
+            self.buffer.push(self.iter.next()?);
+        }
+        self.buffer.get(0)
+    }
+
+    fn look(&mut self, count: usize) -> Option<Self::ItemSlice<'_>> {
+        if self.buffer.len() < count {
+            self.buffer.extend(self.iter.by_ref().take(count));
+        }
+        self.buffer.get(0..count)
     }
 }
 
