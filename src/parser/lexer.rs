@@ -116,6 +116,38 @@ impl<'src> Selection<'src> {
     }
 }
 
+#[derive(Clone, Debug)]
+struct BufIter<I, T>
+where
+    I: Iterator<Item = T>,
+{
+    iter: I,
+    buffer: Vec<T>,
+}
+
+impl<I, T> BufIter<I, T>
+where
+    I: Iterator<Item = T>,
+{
+    fn new(iter: I) -> Self {
+        Self {
+            iter,
+            buffer: Vec::new(),
+        }
+    }
+}
+
+impl<S, T> Iterator for BufIter<S, T>
+where
+    S: Iterator<Item = T>,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.buffer.pop().or_else(|| self.iter.next())
+    }
+}
+
 struct SourceChars<S>(S)
 where
     S: Iterator<Item = u8>;
@@ -138,12 +170,12 @@ where
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct Scanner<S>
 where
     S: Iterator<Item = u8>,
 {
-    source: S,
+    source: BufIter<S, S::Item>,
     cursor: Cursor,
 }
 
@@ -157,7 +189,7 @@ where
         I: IntoIterator<Item = S::Item, IntoIter = S>,
     {
         Self {
-            source: source.into_iter(),
+            source: BufIter::new(source.into_iter()),
             cursor: Cursor::new(),
         }
     }
@@ -167,7 +199,7 @@ where
         self.cursor
     }
 
-    fn source_chars(&mut self) -> SourceChars<&mut S> {
+    fn source_chars(&mut self) -> impl Iterator + '_ {
         SourceChars(self.source.by_ref())
     }
 
