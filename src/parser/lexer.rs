@@ -137,12 +137,16 @@ where
     }
 
     fn peek(&mut self) -> Option<&T> {
-        self.buffer.push(self.iter.next()?);
+        if self.buffer.is_empty() {
+            self.buffer.push(self.iter.next()?);
+        }
         self.buffer.get(0)
     }
 
     fn look(&mut self, count: usize) -> Option<&[T]> {
-        self.buffer.extend(self.iter.by_ref().take(count));
+        if self.buffer.len() < count {
+            self.buffer.extend(self.iter.by_ref().take(count));
+        }
         self.buffer.get(0..count)
     }
 }
