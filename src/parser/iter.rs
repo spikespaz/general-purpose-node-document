@@ -20,6 +20,20 @@ where
             buffer: Vec::new(),
         }
     }
+
+    /// Consume up to `count` items from the internal iterator, moving them into
+    /// the buffer. Return an optional reference to the buffer's items.
+    ///
+    /// If the iterator did not contain enough items to satisfy `count`, `None`
+    /// will be returned. In this case, the only way to get the remaining items
+    /// out is by consuming the iterator normally.
+    pub fn buffer(&mut self, count: usize) -> Option<&[S::Item]> {
+        if self.buffer.len() < count {
+            self.buffer
+                .extend(self.iter.by_ref().take(count - self.buffer.len()));
+        }
+        self.buffer.get(0..count)
+    }
 }
 
 impl<S, T> Iterator for Buffered<S, T>
@@ -88,17 +102,10 @@ where
     type ItemSlice<'items> = &'items [T] where I: 'items, T: 'items;
 
     fn peek(&mut self) -> Option<Self::Item<'_>> {
-        if self.buffer.is_empty() {
-            self.buffer.push(self.iter.next()?);
-        }
-        self.buffer.get(0)
+        self.buffer(1).and_then(|slice| slice.get(0))
     }
 
     fn look(&mut self, count: usize) -> Option<Self::ItemSlice<'_>> {
-        if self.buffer.len() < count {
-            self.buffer
-                .extend(self.iter.by_ref().take(count - self.buffer.len()));
-        }
-        self.buffer.get(0..count)
+        self.buffer(count)
     }
 }
