@@ -1,4 +1,4 @@
-use super::iter::{Buffered, Peekable, SourceChars};
+use super::iter::{SourceBytes, SourceChars};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Cursor {
@@ -123,7 +123,7 @@ pub struct Scanner<S>
 where
     S: Iterator<Item = u8>,
 {
-    source: Buffered<S, S::Item>,
+    source: SourceBytes<S>,
     cursor: Cursor,
 }
 
@@ -137,7 +137,7 @@ where
         I: IntoIterator<Item = S::Item, IntoIter = S>,
     {
         Self {
-            source: Buffered::new(source),
+            source: SourceBytes::new(source),
             cursor: Cursor::new(),
         }
     }
@@ -151,15 +151,15 @@ where
         SourceChars::new(self.source.by_ref())
     }
 
-    #[must_use]
-    pub fn peek_byte(&mut self) -> Option<u8> {
-        self.source.peek().copied()
-    }
+    // #[must_use]
+    // pub fn peek_byte(&mut self) -> Option<u8> {
+    //     self.source.peek().copied()
+    // }
 
-    #[must_use]
-    pub fn look_bytes(&mut self, count: usize) -> Option<&[u8]> {
-        self.source.look(count)
-    }
+    // #[must_use]
+    // pub fn look_bytes(&mut self, count: usize) -> Option<&[u8]> {
+    //     self.source.look(count)
+    // }
 
     // pub fn selection(&mut self) -> Selection<'_> {
     //     let buf = match self.cursor {
