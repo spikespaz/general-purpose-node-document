@@ -1,11 +1,15 @@
 pub trait Buffered: Iterator {
+    type ItemSlice<'a>
+    where
+        Self: 'a;
+
     /// Consume up to `count` items from the internal iterator, moving them into
     /// the buffer. Return an optional reference to the buffer's items.
     ///
     /// If the iterator did not contain enough items to satisfy `count`, `None`
     /// will be returned. In this case, the only way to get the remaining items
     /// out is by consuming the iterator normally.
-    fn buffer(&mut self, count: usize) -> Option<&[Self::Item]>;
+    fn buffer(&mut self, count: usize) -> Option<Self::ItemSlice<'_>>;
 }
 
 #[derive(Clone, Debug)]
@@ -47,7 +51,9 @@ impl<S> Buffered for SourceBytes<S>
 where
     S: Iterator<Item = u8>,
 {
-    fn buffer(&mut self, count: usize) -> Option<&[Self::Item]> {
+    type ItemSlice<'a> = &'a [u8] where S: 'a;
+
+    fn buffer(&mut self, count: usize) -> Option<Self::ItemSlice<'_>> {
         if self.buffer.len() < count {
             self.buffer
                 .extend(self.iter.by_ref().take(count - self.buffer.len()));
@@ -85,6 +91,25 @@ where
             buf.push(byte);
             if let Ok(slice) = std::str::from_utf8(&buf) {
                 return slice.chars().next();
+            }
+        }
+        None
+    }
+}
+
+impl<S> Buffered for SourceChars<S>
+where
+    for<'a> S: Iterator<Item = u8> + Buffered<ItemSlice<'a> = &'a [u8]> + 'a,
+{
+    type ItemSlice<'a> = &'a str;
+
+    fn buffer(&mut self, count: usize) -> Option<Self::ItemSlice<'_>> {
+        for byte in 0.. {
+            let buf = self.0.buffer(byte)?;
+            if let Ok(slice) = std::str::from_utf8(&buf) {
+                if slice.chars().count() >= count {
+                    return Some(slice);
+                }
             }
         }
         None
