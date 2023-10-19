@@ -1,3 +1,5 @@
+use polonius_the_crab::{polonius_loop, polonius_return};
+
 pub trait Buffered: Iterator {
     type ItemSlice<'a>
     where
@@ -104,14 +106,19 @@ where
     type ItemSlice<'a> = &'a str;
 
     fn buffer(&mut self, count: usize) -> Option<Self::ItemSlice<'_>> {
-        for byte in 0.. {
-            let buf = self.0.buffer(byte)?;
-            if let Ok(slice) = std::str::from_utf8(&buf) {
+        let mut src = &mut self.0;
+        let mut byte_count = 0;
+        polonius_loop!(|src| -> Option<Self::ItemSlice<'polonius>> {
+            byte_count += 1;
+            let Some(buf) = src.buffer(byte_count) else {
+                polonius_return!(None)
+            };
+            if let Ok(slice) = std::str::from_utf8(buf) {
                 if slice.chars().count() >= count {
-                    return Some(slice);
+                    polonius_return!(Some(slice));
                 }
             }
-        }
+        });
         None
     }
 }
