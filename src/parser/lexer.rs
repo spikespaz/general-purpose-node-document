@@ -1,3 +1,5 @@
+use super::iter::{Buffered, Peekable, SourceChars};
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Cursor {
     /// The cursor is in a position, but corresponds to no characters.
@@ -117,100 +119,11 @@ impl<'src> Selection<'src> {
 }
 
 #[derive(Clone, Debug)]
-struct BufIter<I, T>
-where
-    I: Iterator<Item = T>,
-{
-    iter: I,
-    buffer: Vec<T>,
-}
-
-impl<I, T> BufIter<I, T>
-where
-    I: Iterator<Item = T>,
-{
-    fn new(iter: I) -> Self {
-        Self {
-            iter,
-            buffer: Vec::new(),
-        }
-    }
-}
-
-impl<S, T> Iterator for BufIter<S, T>
-where
-    S: Iterator<Item = T>,
-{
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.buffer.pop().or_else(|| self.iter.next())
-    }
-}
-
-struct SourceChars<S>(S)
-where
-    S: Iterator<Item = u8>;
-
-impl<S> Iterator for SourceChars<S>
-where
-    S: Iterator<Item = u8>,
-{
-    type Item = char;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut buf = Vec::with_capacity(4);
-        for byte in self.0.by_ref() {
-            buf.push(byte);
-            if let Ok(slice) = std::str::from_utf8(&buf) {
-                return slice.chars().next();
-            }
-        }
-        None
-    }
-}
-
-trait Peekable {
-    type Item<'item>
-    where
-        Self: 'item;
-    type ItemSlice<'items>
-    where
-        Self: 'items;
-
-    fn peek(&mut self) -> Option<Self::Item<'_>>;
-    fn look(&mut self, count: usize) -> Option<Self::ItemSlice<'_>>;
-}
-
-impl<I, T> Peekable for BufIter<I, T>
-where
-    I: Iterator<Item = T>,
-{
-    type Item<'item> = &'item T where I: 'item, T: 'item;
-    type ItemSlice<'items> = &'items [T] where I: 'items, T: 'items;
-
-    fn peek(&mut self) -> Option<Self::Item<'_>> {
-        if self.buffer.is_empty() {
-            self.buffer.push(self.iter.next()?);
-        }
-        self.buffer.get(0)
-    }
-
-    fn look(&mut self, count: usize) -> Option<Self::ItemSlice<'_>> {
-        if self.buffer.len() < count {
-            self.buffer
-                .extend(self.iter.by_ref().take(count - self.buffer.len()));
-        }
-        self.buffer.get(0..count)
-    }
-}
-
-#[derive(Clone, Debug)]
 pub struct Scanner<S>
 where
     S: Iterator<Item = u8>,
 {
-    source: BufIter<S, S::Item>,
+    source: Buffered<S, S::Item>,
     cursor: Cursor,
 }
 
@@ -224,7 +137,7 @@ where
         I: IntoIterator<Item = S::Item, IntoIter = S>,
     {
         Self {
-            source: BufIter::new(source.into_iter()),
+            source: Buffered::new(source),
             cursor: Cursor::new(),
         }
     }
@@ -235,7 +148,7 @@ where
     }
 
     fn source_chars(&mut self) -> impl Iterator + '_ {
-        SourceChars(self.source.by_ref())
+        SourceChars::new(self.source.by_ref())
     }
 
     #[must_use]
