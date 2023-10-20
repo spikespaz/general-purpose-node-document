@@ -88,10 +88,11 @@ where
     type Item = char;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut buf = Vec::with_capacity(4);
-        for byte in self.0.by_ref() {
-            buf.push(byte);
-            if let Ok(slice) = std::str::from_utf8(&buf) {
+        let mut buf = [0; 4];
+        // A single character can be at most 4 bytes.
+        for (i, byte) in self.0.by_ref().take(4).enumerate() {
+            buf[i] = byte;
+            if let Ok(slice) = std::str::from_utf8(&buf[..=i]) {
                 return slice.chars().next();
             }
         }
