@@ -14,6 +14,21 @@ pub trait Buffered: Iterator {
     fn buffer(&mut self, count: usize) -> Option<Self::ItemSlice<'_>>;
 }
 
+pub trait Peekable {
+    type Item<'item>
+    where
+        Self: 'item;
+    type ItemSlice<'items>
+    where
+        Self: 'items;
+
+    /// Peek at a single item in this iterator, without consuming.
+    fn peek(&mut self) -> Option<Self::Item<'_>>;
+
+    /// Peek at multiple items in this iterator, without consuming.
+    fn look(&mut self, count: usize) -> Option<Self::ItemSlice<'_>>;
+}
+
 #[derive(Clone, Debug)]
 pub struct SourceBytes<S>
 where
@@ -61,6 +76,22 @@ where
                 .extend(self.iter.by_ref().take(count - self.buffer.len()));
         }
         self.buffer.make_contiguous().get(0..count)
+    }
+}
+
+impl<S> Peekable for SourceBytes<S>
+where
+    S: Iterator<Item = u8>,
+{
+    type Item<'item> = u8 where Self: 'item;
+    type ItemSlice<'items> = &'items [u8] where Self: 'items;
+
+    fn peek(&mut self) -> Option<Self::Item<'_>> {
+        self.buffer(1).and_then(|slice| slice.first().copied())
+    }
+
+    fn look(&mut self, count: usize) -> Option<Self::ItemSlice<'_>> {
+        self.buffer(count)
     }
 }
 
@@ -137,33 +168,22 @@ where
     }
 }
 
-// pub trait Peekable {
-//     type Item<'item>
-//     where
-//         Self: 'item;
-//     type ItemSlice<'items>
-//     where
-//         Self: 'items;
+impl<S> Peekable for SourceChars<S>
+where
+    for<'a> S: Iterator<Item = u8> + 'a,
+    for<'a> Self: Buffered<ItemSlice<'a> = &'a str> + 'a,
+{
+    type Item<'item> = char where Self: 'item;
+    type ItemSlice<'items> = &'items str where Self: 'items;
 
-//     fn peek(&mut self) -> Option<Self::Item<'_>>;
-//     fn look(&mut self, count: usize) -> Option<Self::ItemSlice<'_>>;
-// }
+    fn peek(&mut self) -> Option<Self::Item<'_>> {
+        self.buffer(1).and_then(|slice| slice.chars().next())
+    }
 
-// impl<I, T> Peekable for Buffered<I, T>
-// where
-//     I: Iterator<Item = T>,
-// {
-//     type Item<'item> = &'item T where I: 'item, T: 'item;
-//     type ItemSlice<'items> = &'items [T] where I: 'items, T: 'items;
-
-//     fn peek(&mut self) -> Option<Self::Item<'_>> {
-//         self.buffer(1).and_then(|slice| slice.get(0))
-//     }
-
-//     fn look(&mut self, count: usize) -> Option<Self::ItemSlice<'_>> {
-//         self.buffer(count)
-//     }
-// }
+    fn look(&mut self, count: usize) -> Option<Self::ItemSlice<'_>> {
+        self.buffer(count)
+    }
+}
 
 #[cfg(test)]
 mod tests {
