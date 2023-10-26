@@ -131,7 +131,7 @@ where
                 }
             }
         }
-        None
+        unreachable!()
     }
 }
 
