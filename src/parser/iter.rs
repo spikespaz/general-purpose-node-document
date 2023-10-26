@@ -205,6 +205,8 @@ mod tests {
         assert_eq!(&source[0..3], chars.buffer(3).unwrap());
         // Ensure that the characters are taken from the buffer,
         // and that `buffer` correctly preserves them.
-        assert_eq!(source, chars.collect::<String>());
+        assert_eq!(&source[0..4], chars.by_ref().take(4).collect::<String>());
+        // Ensure that the iterator has been advanced.
+        assert_eq!(&source[4..7], chars.buffer(3).unwrap());
     }
 }
