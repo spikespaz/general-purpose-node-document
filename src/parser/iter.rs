@@ -98,11 +98,11 @@ where
     }
 }
 
-impl<S> Buffered for SourceChars<S>
+impl<S> Buffered for SourceChars<&mut S>
 where
     for<'a> S: Iterator<Item = u8> + Buffered<ItemSlice<'a> = &'a [u8]> + 'a,
 {
-    type ItemSlice<'a> = &'a str;
+    type ItemSlice<'a> = &'a str where Self: 'a;
 
     // Allowed specifically here because the borrow checker is incorrect.
     #[allow(unsafe_code)]
