@@ -162,3 +162,27 @@ where
 //         self.buffer(count)
 //     }
 // }
+
+#[cfg(test)]
+mod tests {
+    use super::{Buffered, SourceBytes, SourceChars};
+
+    #[test]
+    fn test_source_chars() {
+        let source = "abcdefg";
+        let chars = SourceChars::new(source.bytes());
+        assert_eq!(source, chars.collect::<String>());
+    }
+
+    #[test]
+    fn test_source_chars_buffer() {
+        let source = "abcdefg";
+        let mut bytes = SourceBytes::new(source.bytes());
+        let mut chars = SourceChars::new(&mut bytes);
+        // Ensure that the `buffer` function works.
+        assert_eq!(&source[0..3], chars.buffer(3).unwrap());
+        // Ensure that the characters are taken from the buffer,
+        // and that `buffer` correctly preserves them.
+        assert_eq!(source, chars.collect::<String>());
+    }
+}
