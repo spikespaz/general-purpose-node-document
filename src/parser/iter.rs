@@ -1,9 +1,9 @@
 use std::collections::VecDeque;
 
 pub trait Buffered: Iterator {
-    type ItemSlice<'a>
+    type ItemSlice<'items>
     where
-        Self: 'a;
+        Self: 'items;
 
     /// Consume up to `count` items from the internal iterator, moving them into
     /// the buffer. Return an optional reference to the buffer's items.
@@ -68,7 +68,7 @@ impl<S> Buffered for SourceBytes<S>
 where
     S: Iterator<Item = u8>,
 {
-    type ItemSlice<'a> = &'a [u8] where S: 'a;
+    type ItemSlice<'a> = &'a [u8] where Self: 'a;
 
     fn buffer(&mut self, count: usize) -> Option<Self::ItemSlice<'_>> {
         if self.buffer.len() < count {
@@ -135,7 +135,7 @@ impl<S> Buffered for SourceChars<&mut S>
 where
     for<'a> S: Iterator<Item = u8> + Buffered<ItemSlice<'a> = &'a [u8]> + 'a,
 {
-    type ItemSlice<'a> = &'a str where Self: 'a;
+    type ItemSlice<'items> = &'items str where Self: 'items;
 
     // Allowed specifically here because the borrow checker is incorrect.
     #[allow(unsafe_code)]
