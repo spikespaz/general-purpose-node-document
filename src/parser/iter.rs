@@ -1,5 +1,3 @@
-use polonius_the_crab::{polonius_loop, polonius_return};
-
 pub trait Buffered: Iterator {
     type ItemSlice<'a>
     where
@@ -106,20 +104,33 @@ where
 {
     type ItemSlice<'a> = &'a str;
 
+    // Allowed specifically here because the borrow checker is incorrect.
+    #[allow(unsafe_code)]
     fn buffer(&mut self, count: usize) -> Option<Self::ItemSlice<'_>> {
-        let mut src = &mut self.0;
-        let mut byte_count = 0;
-        polonius_loop!(|src| -> Option<Self::ItemSlice<'polonius>> {
-            byte_count += 1;
-            let Some(buf) = src.buffer(byte_count) else {
-                polonius_return!(None)
-            };
+        for byte_count in 0.. {
+            let buf = self.0.buffer(byte_count)?;
+            // SAFETY:
+            //
+            // This unsafe pointer coercion is here because of a limitation
+            // in the borrow checker. In the future, when Polonius is merged as
+            // the de-facto borrow checker, this unsafe code can be removed.
+            //
+            // The lifetime of the byte slice is shortened to the lifetime of
+            // the return value, which lives as long as `self` does.
+            //
+            // This is referred to as the "polonius problem",
+            // or more accurately, the "lack-of-polonius problem".
+            //
+            // <https://github.com/rust-lang/rust/issues/54663>
+            let buf: *const [u8] = buf;
+            let buf: &[u8] = unsafe { &*buf };
+
             if let Ok(slice) = std::str::from_utf8(buf) {
                 if slice.chars().count() >= count {
-                    polonius_return!(Some(slice));
+                    return Some(slice);
                 }
             }
-        });
+        }
         None
     }
 }
