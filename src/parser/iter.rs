@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 pub trait Buffered: Iterator {
     type ItemSlice<'a>
     where
@@ -18,7 +20,7 @@ where
     S: Iterator<Item = u8>,
 {
     iter: S,
-    buffer: Vec<S::Item>,
+    buffer: VecDeque<S::Item>,
 }
 
 impl<S> SourceBytes<S>
@@ -31,7 +33,7 @@ where
     {
         Self {
             iter: iter.into_iter(),
-            buffer: Vec::new(),
+            buffer: VecDeque::new(),
         }
     }
 }
@@ -43,7 +45,7 @@ where
     type Item = S::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.buffer.pop().or_else(|| self.iter.next())
+        self.buffer.pop_front().or_else(|| self.iter.next())
     }
 }
 
@@ -58,7 +60,7 @@ where
             self.buffer
                 .extend(self.iter.by_ref().take(count - self.buffer.len()));
         }
-        self.buffer.get(0..count)
+        self.buffer.make_contiguous().get(0..count)
     }
 }
 
